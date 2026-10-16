@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e27">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>فلزیاب بلوتوثی</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+  body {
+    font-family: Tahoma, Arial, sans-serif;
+    background: radial-gradient(circle at 50% 30%, #1a1f3a 0%, #050814 70%);
+    color: #fff;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* هدر */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 5px 10px;
+    flex-shrink: 0;
+  }
+  .header h1 {
+    font-size: 16px;
+    color: #4fc3f7;
+  }
+  .header .icon-btn {
+    background: #1a1f3a;
+    border: 1px solid #2a3050;
+    color: #4fc3f7;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* بدنه اصلی */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    gap: 12px;
+  }
+
+  /* رادار */
+  .radar-wrap {
+    position: relative;
+    width: min(70vw, 260px);
+    height: min(70vw, 260px);
+    flex-shrink: 0;
+  }
+  .radar {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(79,195,247,0.12) 0%, rgba(79,195,247,0.02) 70%);
+    border: 3px solid rgba(79,195,247,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .radar.hot {
+    border-color: #ff1744;
+    box-shadow: 0 0 80px rgba(255,23,68,0.8), inset 0 0 60px rgba(255,23,68,0.3);
+    animation: pulse 0.3s infinite alternate;
+  }
+  .radar.warm {
+    border-color: #ffab00;
+    box-shadow: 0 0 60px rgba(255,171,0,0.6), inset 0 0 40px rgba(255,171,0,0.15);
+  }
+  .radar.cold {
+    border-color: #4fc3f7;
+    box-shadow: 0 0 30px rgba(79,195,247,0.3);
+  }
+  .radar.none {
+    border-color: #333;
+    box-shadow: none;
+    opacity: 0.5;
+  }
+
+  @keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.06); }
+  }
+
+  .radar-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(79,195,247,0.15);
+    pointer-events: none;
+  }
+  .radar-ring.r1 { width: 70%; height: 70%; }
+  .radar-ring.r2 { width: 40%; height: 40%; }
+
+  .radar-center {
+    text-align: center;
+    z-index: 2;
+  }
+  .percent {
+    font-size: clamp(42px, 14vw, 64px);
+    font-weight: bold;
+    line-height: 1;
+    color: #fff;
+    text-shadow: 0 0 30px currentColor;
+  }
+  .percent-sign { font-size: 0.4em; color: #aaa; }
+  .distance {
+    font-size: clamp(11px, 3vw, 13px);
+    color: #4fc3f7;
+    margin-top: 5px;
+  }
+
+  /* نوار */
+  .bar-wrap {
+    width: min(90%, 400px);
+    height: 14px;
+    background: #0f1428;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid #2a3050;
+    flex-shrink: 0;
+  }
+  .bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4fc3f7, #00e676, #ffab00, #ff1744);
+    transition: width 0.15s linear;
+    border-radius: 7px;
+  }
+
+  /* هدف انتخاب شده */
+  .target-info {
+    text-align: center;
+    font-size: 13px;
+    color: #aaa;
+    padding: 0 10px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+  .target-name {
+    color: #4fc3f7;
+    font-weight: bold;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rssi-line {
+    font-size: 11px;
+    color: #666;
+    font-family: monospace;
+  }
+
+  /* دکمه‌ها */
+  .controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 5px 0;
+    flex-shrink: 0;
+  }
+  button {
+    background: linear-gradient(135deg, #4fc3f7, #2196f3);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    font-size: 14px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(79,195,247,0.4);
+    transition: transform 0.1s;
+  }
+  button:active { transform: scale(0.95); }
+  button:disabled { opacity: 0.4; }
+  button.stop {
+    background: linear-gradient(135deg, #ff1744, #d50000);
+    box-shadow: 0 4px 15px rgba(255,23,68,0.4);
+  }
+  button.small {
+    padding: 8px 16px;
+    font-size: 12px;
+    border-radius: 15px;
+  }
+
+  /* لیست دستگاه‌ها */
+  .device-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #0f1428;
+    border-top: 2px solid #2a3050;
+    border-radius: 20px 20px 0 0;
+    max-height: 60vh;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+  .device-panel.open { transform: translateY(0); }
+
+  .panel-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #1a1f3a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-header h2 {
+    font-size: 15px;
+    color: #4fc3f7;
+  }
+  .panel-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 0 5px;
+    box-shadow: none;
+  }
+  .panel-close:active { transform: scale(0.9); }
+
+  .device-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 5px 0;
+  }
+  .device-item {
+    padding: 12px 20px;
+    border-bottom: 1px solid #1a1f3a;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .device-item:last-child { border-bottom: none; }
+  .device-item:active { background: #1a1f3a; }
+  .device-item.active {
+    background: linear-gradient(90deg, rgba(255,23,68,0.15), transparent);
+    border-right: 3px solid #ff1744;
+  }
+  .device-item .info { flex: 1; min-width: 0; }
+  .device-item .name {
+    color: #4fc3f7;
+    font-weight: bold;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+  }
+  .device-item .addr {
+    color: #555;
+    font-size: 10px;
+    font-family: monospace;
+    display: block;
+    margin-top: 2px;
+  }
+  .device-item .rssi {
+    color: #888;
+    font-size: 12px;
+    font-family: monospace;
+    flex-shrink: 0;
+  }
+  .device-item.active .rssi { color: #ff1744; font-weight: bold; }
+
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+  }
+
+  /* وضعیت */
+  .status-bar {
+    text-align: center;
+    font-size: 11px;
+    color: #666;
+    padding: 4px;
+    flex-shrink: 0;
+    min-height: 20px;
+  }
+
+  /* دکمه شناور لیست */
+  .fab {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4fc3f7, #2196f3);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 20px rgba(79,195,247,0.5);
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .fab .badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    background: #ff1744;
+    color: #fff;
+    border-radius: 50%;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+
+  /* حالت هشدار */
+  .alert-flash {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 40%, rgba(255,23,68,0.3) 100%);
+    opacity: 0;
+    z-index: 10;
+  }
+  .alert-flash.on { animation: flash 0.4s ease-out; }
+  @keyframes flash {
+    0% { opacity: 0; }
+    30% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📡 فلزیاب بلوتوثی</h1>
+  <button class="icon-btn" id="fullscreenBtn" title="تمام صفحه">⛶</button>
+</div>
+
+<div class="main">
+  <div class="radar-wrap">
+    <div class="radar cold" id="radar">
+      <div class="radar-ring r1"></div>
+      <div class="radar-ring r2"></div>
+      <div class="radar-center">
+        <div class="percent" id="percentValue">--<span class="percent-sign">%</span></div>
+        <div class="distance" id="distanceValue">---</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="target-info">
+    <span class="target-name" id="targetName">هدف انتخاب نشده</span>
+    <span class="rssi-line" id="rssiLine">RSSI: -- dBm</span>
+  </div>
+
+  <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+
+  <div class="controls">
+    <button id="startBtn">شروع اسکن</button>
+    <button id="stopBtn" class="stop" style="display:none;">توقف</button>
+  </div>
+</div>
+
+<div class="status-bar" id="status">برای شروع دکمه رو بزن</div>
+
+<button class="fab" id="listBtn" style="display:none;">
+  ☰<span class="badge" id="deviceCount">0</span>
+</button>
+
+<div class="alert-flash" id="alertFlash"></div>
+
+<!-- پنل لیست دستگاه‌ها -->
+<div class="device-panel" id="devicePanel">
+  <div class="panel-header">
+    <h2>📡 دستگاه‌های پیدا شده</h2>
+    <button class="panel-close" id="panelClose">✕</button>
+  </div>
+  <div class="device-list" id="deviceList">
+    <div class="empty-state">هنوز دستگاه‌ی پیدا نشده...</div>
+  </div>
+</div>
+
+<script>
+// ============ تنظیمات ============
+const CONFIG = {
+  RSSI_NEAR: -40,
+  RSSI_FAR: -100,
+  BEEP_MIN_MS: 50,
+  BEEP_MAX_MS: 1500,
+  SMOOTH_SIZE: 5,
+  TARGET_LOST_MS: 5000,
+  REFERENCE_RSSI_1M: -59,  // RSSI تقریبی در فاصله ۱ متر
+  PATH_LOSS: 2.0            // ضریب تضعیف (داخل ساختمان ۲، فضای باز ۲-۴)
+};
+
+// ============ متغیرها ============
+let scan = null;
+let isRunning = false;
+let beepTimer = null;
+let selectedDeviceId = null;
+let devices = new Map();
+let audioCtx = null;
+let lastBeepTime = 0;
+let alertCooldown = 0;
+
+// ============ UI Elements ============
+const radarEl = document.getElementById('radar');
+const percentEl = document.getElementById('percentValue');
+const distanceEl = document.getElementById('distanceValue');
+const targetNameEl = document.getElementById('targetName');
+const rssiLineEl = document.getElementById('rssiLine');
+const barEl = document.getElementById('bar');
+const statusEl = document.getElementById('status');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const listBtn = document.getElementById('listBtn');
+const deviceCountEl = document.getElementById('deviceCount');
+const devicePanel = document.getElementById('devicePanel');
+const deviceListEl = document.getElementById('deviceList');
+const panelClose = document.getElementById('panelClose');
+const alertFlash = document.getElementById('alertFlash');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+// ============ Audio ============
+function initAudio() {
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) { console.error(e); }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playBeep(freq, dur, vol) {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur);
+  } catch(e) {}
+}
+
+// ============ Helpers ============
+function rssiToPercent(rssi) {
+  const c = Math.max(CONFIG.RSSI_FAR, Math.min(CONFIG.RSSI_NEAR, rssi));
+  return (c - CONFIG.RSSI_FAR) / (CONFIG.RSSI_NEAR - CONFIG.RSSI_FAR);
+}
+
+function rssiToMeters(rssi) {
+  // فرمول log-distance path loss
+  const dist = Math.pow(10, (CONFIG.REFERENCE_RSSI_1M - rssi) / (10 * CONFIG.PATH_LOSS));
+  return dist;
+}
+
+function formatDistance(m) {
+  if (m < 1) return `${(m * 100).toFixed(0)} سانتی‌متر`;
+  if (m < 10) return `${m.toFixed(1)} متر`;
+  return `${m.toFixed(0)} متر`;
+}
+
+function smoothRssi(history, newVal) {
+  history.push(newVal);
+  if (history.length > CONFIG.SMOOTH_SIZE) history.shift();
+  return history.reduce((a, b) => a + b, 0) / history.length;
+}
+
+// ============ UI Update ============
+function updateUI() {
+  if (!selectedDeviceId || !devices.has(selectedDeviceId)) {
+    percentEl.innerHTML = '--<span class="percent-sign">%</span>';
+    distanceEl.textContent = '---';
+    targetNameEl.textContent = 'هدف انتخاب نشده';
+    rssiLineEl.textContent = 'RSSI: -- dBm';
+    barEl.style.width = '0%';
+    radarEl.className = 'radar none';
+    return;
+  }
+
+  const d = devices.get(selectedDeviceId);
+  const avg = d.rssiHistory.length > 0
+    ? d.rssiHistory.reduce((a,b)=>a+b,0) / d.rssiHistory.length
+    : -100;
+
+  const p = rssiToPercent(avg);
+  const percent = Math.round(p * 100);
+  const meters = rssiToMeters(avg);
+
+  percentEl.innerHTML = `${percent}<span class="percent-sign">%</span>`;
+  distanceEl.textContent = `~${formatDistance(meters)}`;
+  targetNameEl.textContent = d.name || '(بی‌نام)';
+  rssiLineEl.textContent = `RSSI: ${avg.toFixed(1)} dBm | ${d.address.slice(-8)}`;
+  barEl.style.width = percent + '%';
+
+  radarEl.className = 'radar';
+  if (p > 0.66) {
+    radarEl.classList.add('hot');
+    statusEl.textContent = '🔥 خیلی نزدیک!';
+  } else if (p > 0.33) {
+    radarEl.classList.add('warm');
+    statusEl.textContent = '🌤 نزدیک می‌شی';
+  } else {
+    radarEl.classList.add('cold');
+    statusEl.textContent = '❄️ دور';
+  }
+}
+
+// ============ Device List ============
+function renderDeviceList() {
+  if (devices.size === 0) {
+    deviceListEl.innerHTML = '<div class="empty-state">هنوز دستگاه‌ی پیدا نشده...</div>';
+    deviceCountEl.textContent = '0';
+    return;
+  }
+
+  // مرتب‌سازی بر اساس RSSI
+  const sorted = [...devices.entries()].sort((a, b) => {
+    const ra = a[1].rssiHistory.length > 0
+      ? a[1].rssiHistory.reduce((x,y)=>x+y,0) / a[1].rssiHistory.length : -100;
+    const rb = b[1].rssiHistory.length > 0
+      ? b[1].rssiHistory.reduce((x,y)=>x+y,0) / b[1].rssiHistory.length : -100;
+    return rb - ra;
+  });
+
+  deviceListEl.innerHTML = sorted.map(([id, d]) => {
+    const avg = d.rssiHistory.length > 0
+      ? (d.rssiHistory.reduce((x,y)=>x+y,0) / d.rssiHistory.length).toFixed(1)
+      : '--';
+    const active = id === selectedDeviceId ? ' active' : '';
+    const name = d.name || '(بی‌نام)';
+    const addrShort = d.address ? d.address.slice(-8) : '';
+    return `<div class="device-item${active}" data-id="${id}">
+      <div class="info">
+        <span class="name">${name}</span>
+        <span class="addr">${addrShort}</span>
+      </div>
+      <div class="rssi">${avg} dBm</div>
+    </div>`;
+  }).join('');
+
+  deviceCountEl.textContent = devices.size.toString();
+
+  // کلیک روی هر دستگاه
+  deviceListEl.querySelectorAll('.device-item').forEach(el => {
+    el.addEventListener('click', () => {
+      selectedDeviceId = el.dataset.id;
+      const d = devices.get(selectedDeviceId);
+      if (d) d.rssiHistory = [];
+      updateUI();
+      renderDeviceList();
+      closePanel();
+      statusEl.textContent = '🎯 هدف انتخاب شد';
+    });
+  });
+}
+
+function openPanel() {
+  devicePanel.classList.add('open');
+  renderDeviceList();
+}
+function closePanel() {
+  devicePanel.classList.remove('open');
+}
+
+// ============ Beep Loop ============
+function beepLoop() {
+  if (!isRunning) return;
+
+  if (selectedDeviceId && devices.has(selectedDeviceId)) {
+    const d = devices.get(selectedDeviceId);
+    const now = Date.now();
+
+    if (now - d.lastSeen < CONFIG.TARGET_LOST_MS) {
+      const avg = d.rssiHistory.length > 0
+        ? d.rssiHistory.reduce((a,b)=>a+b,0) / d.rssiHistory.length
+        : -100;
+      const p = rssiToPercent(avg);
+      const interval = CONFIG.BEEP_MAX_MS - p * (CONFIG.BEEP_MAX_MS - CONFIG.BEEP_MIN_MS);
+
+      let freq, vol, dur;
+      if (p > 0.75) { freq = 1500; vol = 0.5; dur = 0.04; }
+      else if (p > 0.5) { freq = 1200; vol = 0.45; dur = 0.06; }
+      else if (p > 0.25) { freq = 900; vol = 0.4; dur = 0.08; }
+      else { freq = 600; vol = 0.3; dur = 0.1; }
+
+      playBeep(freq, dur, vol);
+
+      // لرزش
+      if (navigator.vibrate) {
+        if (p > 0.75) navigator.vibrate(40);
+        else if (p > 0.5) navigator.vibrate(25);
+      }
+
+      // فلاش قرمز در حالت خیلی نزدیک
+      if (p > 0.8 && now - alertCooldown > 1000) {
+        alertCooldown = now;
+        alertFlash.classList.remove('on');
+        void alertFlash.offsetWidth;
+        alertFlash.classList.add('on');
+      }
+
+      beepTimer = setTimeout(beepLoop, interval);
+      return;
+    }
+  }
+
+  // اگه هدفی نیست، هر نیم ثانیه چک کن
+  beepTimer = setTimeout(beepLoop, 500);
+}
+
+// ============ Bluetooth Scanning ============
+function handleAdvertisement(id, name, rssi, address) {
+  if (!devices.has(id)) {
+    devices.set(id, {
+      name: name || '(بی‌نام)',
+      address: address || id,
+      rssiHistory: [],
+      lastSeen: Date.now()
+    });
+    renderDeviceList();
+  }
+
+  const d = devices.get(id);
+  if (name && name !== '(بی‌نام)') d.name = name;
+  if (address) d.address = address;
+  smoothRssi(d.rssiHistory, rssi);
+  d.lastSeen = Date.now();
+
+  // اگه هدفی انتخاب نشده، قوی‌ترین دستگاه رو خودکار انتخاب کن
+  if (!selectedDeviceId) {
+    selectedDeviceId = id;
+    statusEl.textContent = '🎯 هدف خودکار انتخاب شد';
+  }
+
+  if (id === selectedDeviceId) updateUI();
+  renderDeviceList();
+}
+
+async function startScan() {
+  if (!navigator.bluetooth) {
+    alert('مرورگرت Web Bluetooth رو پشتیبانی نمی‌کنه!\nاز Chrome اندروید استفاده کن.');
+    return;
+  }
+
+  try {
+    initAudio();
+    statusEl.textContent = 'در حال اسکن...';
+    startBtn.disabled = true;
+
+    // روش ۱: LE Scan (بدون اتصال - بهترین)
+    if (navigator.bluetooth.requestLEScan) {
+      scan = await navigator.bluetooth.requestLEScan({
+        acceptAllAdvertisements: true,
+        keepRepeatedDevices: true
+      });
+
+      navigator.bluetooth.addEventListener('advertisementreceived', onAdvertisement);
+
+      statusEl.textContent = '✅ اسکن فعاله';
+      isRunning = true;
+      startBtn.style.display = 'none';
+      stopBtn.style.display = 'inline-block';
+      listBtn.style.display = 'flex';
+      beepLoop();
+      return;
+    }
+
+    // روش ۲ (fallback): انتخاب دستی دستگاه
+    statusEl.textContent = 'انتخاب دستگاه...';
+    const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: ['generic_access', 'battery_service', 'device_information']
+    });
+
+    const id = device.id || device.name || Math.random().toString();
+    devices.set(id, {
+      name: device.name || '(بی‌نام)',
+      address: device.id || id,
+      rssiHistory: [],
+      lastSeen: Date.now()
+    });
+
+    device.addEventListener('advertisementreceived', (e) => {
+      if (e.rssi) handleAdvertisement(id, device.name, e.rssi, device.id);
+    });
+
+    if (device.watchAdvertisements) {
+      await device.watchAdvertisements();
+    }
+
+    selectedDeviceId = id;
+    isRunning = true;
+    startBtn.style.display = 'none';
+    stopBtn.style.display = 'inline-block';
+    listBtn.style.display = 'flex';
+    statusEl.textContent = '✅ در حال اسکن';
+    beepLoop();
+
+  } catch (err) {
+    console.error(err);
+    startBtn.disabled = false;
+
+    if (err.name === 'NotFoundError') {
+      statusEl.textContent = 'دستگاهی انتخاب نشد';
+    } else if (err.name === 'NotSupportedError' || err.message.includes('requestLEScan')) {
+      statusEl.textContent = 'مرورگرت از اسکن BLE پشتیبانی نمی‌کنه';
+      alert('مرورگرت از اسکن کامل BLE پشتیبانی نمی‌کنه.\n\nلطفاً Chrome اندروید رو آپدیت کن یا از اپ‌های آماده مثل HD BLE Analyzer استفاده کن.');
+    } else {
+      statusEl.textContent = 'خطا: ' + err.message;
+    }
+  }
+}
+
+function onAdvertisement(e) {
+  const device = e.device;
+  if (!device || !e.rssi) return;
+  handleAdvertisement(device.id || device.name, device.name, e.rssi, device.id);
+}
+
+function stopScan() {
+  isRunning = false;
+  if (beepTimer) { clearTimeout(beepTimer); beepTimer = null; }
+
+  if (scan) {
+    try { scan.stop(); } catch(e) {}
+    navigator.bluetooth.removeEventListener('advertisementreceived', onAdvertisement);
+    scan = null;
+  }
+
+  selectedDeviceId = null;
+  devices.clear();
+  percentEl.innerHTML = '--<span class="percent-sign">%</span>';
+  distanceEl.textContent = '---';
+  targetNameEl.textContent = 'هدف انتخاب نشده';
+  rssiLineEl.textContent = 'RSSI: -- dBm';
+  barEl.style.width = '0%';
+  radarEl.className = 'radar none';
+  statusEl.textContent = 'متوقف شد';
+  startBtn.style.display = 'inline-block';
+  startBtn.disabled = false;
+  stopBtn.style.display = 'none';
+  listBtn.style.display = 'none';
+  closePanel();
+}
+
+// ============ Event Listeners ============
+startBtn.addEventListener('click', startScan);
+stopBtn.addEventListener('click', stopScan);
+listBtn.addEventListener('click', openPanel);
+panelClose.addEventListener('click', closePanel);
+
+fullscreenBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen?.().catch(()=>{});
+  } else {
+    document.exitFullscreen?.().catch(()=>{});
+  }
+});
+
+// کلید ESC برای بستن پنل
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closePanel();
+});
+
+// Wake Lock (نگه داشتن صفحه روشن)
+if ('wakeLock' in navigator) {
+  navigator.wakeLock.request('screen').catch(()=>{});
+}
+</script>
+</body>
+</html>
